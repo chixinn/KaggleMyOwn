@@ -16,11 +16,13 @@ categorical_features = train_data.select_dtypes(include = ["object"]).columns
 train_cat = train_data[categorical_features]
 #see what most category data are the same
 #delete highly skew category data
+
 pct=[]
 for ix in train_cat.columns:
     temp=train_cat[ix].describe()
     pct.append(temp["freq"]/temp["count"])
 skewData=pd.DataFrame(pct,index=train_cat.columns,columns=["skewness"])
+# 如果大多数categorical的房子信息差不多，可以适当选择删掉：ModelSelection
 skewData=skewData.sort_values(by="skewness",ascending=False)
 print (skewData)
 train_data = train_data.drop((skewData[skewData['skewness'] >= 0.95]).index,1) 
@@ -61,6 +63,9 @@ train_data=train_data.replace({"LotShape" : {"IR3" : 1, "IR2" : 2, "IR1" : 3, "R
 train_data=train_data.replace({"PavedDrive" : {"N" : 0, "P" : 1, "Y" : 2}})
 
 #2.3: Simplifications of existing categorical 
+# 下面这一步非常的重要！
+# 合并和Simplify Categorical 的数据，有时某些features的item出现的frequency会出现的特别少
+# 如果直接粗暴展开成dummy时，会出现一长串dummy，展开出来有一堆dummy就可能陷入多重共线性的问题。
 train_data["Condition1"] = train_data.Condition1.replace({"RRNe" : "Other", 
                                                   "RRNn" : "Other","PosA" : "Other", 
                                                    "RRAe" : "Other"
@@ -122,6 +127,7 @@ train_data["ExterGrade"] = train_data["ExterQual"] * train_data["ExterCond"]
 # Overall kitchen score
 train_data["KitchenScore"] = train_data["KitchenAbvGr"] * train_data["KitchenQual"]
 # Total number of bathrooms
+# 买房子可能真的没有这么多care :D
 train_data["TotalBath"] = train_data["BsmtFullBath"] + (0.5 * train_data["BsmtHalfBath"]) + \
 train_data["FullBath"] + (0.5 * train_data["HalfBath"])
 train_data.drop(["BsmtFullBath","BsmtHalfBath","FullBath","HalfBath"],axis=1)
@@ -142,6 +148,7 @@ train_data["BoughtOffPlan"] = train_data.SaleCondition.replace({"Abnorml" : 0, "
 #2.5 Polinomial transformation (Box-Cox)
 # X^2, X^3, X^0.5, 1/X, Log(X)
 # Find most important features relative to target
+# 这里仅做box-cox变换的展示。
 print("Find most important features relative to target")
 corr = train_data.corr()
 corr.sort_values(["SalePrice"], ascending = False, inplace = True)
@@ -170,6 +177,8 @@ print("Remaining NAs for numerical features in train : " + str(train_num.isnull(
 
 #2.6 turn category features to dummy
 print("NAs for categorical features in train : " + str(train_cat.isnull().values.sum()))
+# 注意这里drop_first一定要等于True，这就是上课所讲的dummy trap!!!!
+
 train_cat = pd.get_dummies(train_cat, drop_first=True)
 print("Remaining NAs for categorical features in train : " + str(train_cat.isnull().values.sum()))
 
@@ -177,7 +186,8 @@ print("Remaining NAs for categorical features in train : " + str(train_cat.isnul
 train_Data_New = pd.concat([train_num, train_cat], axis = 1)
 print("New number of features : " + str(train_Data_New.shape[1]))
 
-#2.8 remove collinear columns
+#2.8 remove collinear columns 
+# 去掉高度相关，多重共线性
 # Create correlation matrix
 corr_matrix = train_Data_New.corr().abs()
 # Select upper triangle of correlation matrix
@@ -225,7 +235,8 @@ r2_score(y_test, y_testPred)
 print("adjusted r-squared of out-of-sample is")
 adj_r2=sklearn_adjR2(X_test, y_test)
 print("RMSE of out-of-sample is")
-print(RMSE(y_testPred, y_test))
+print(RMSE(y_testPred, y_test))# 0.09->0.187 说明我们的方法里面有overfitting
+# 如果最终测试结果RMSE在0.1以内，比赛即是500名以内。
 print(sklearn_Pvalue(X_test, y_test))
 
 train_Data_New["SalePrice"]=train_data["SalePrice"]
