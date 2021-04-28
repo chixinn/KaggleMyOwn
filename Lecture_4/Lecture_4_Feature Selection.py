@@ -29,6 +29,8 @@ print("y_train : " + str(y_train.shape))
 print("y_test : " + str(y_test.shape))
 
 #2.1.1 select top 20 features with the best F-stats
+# 固定20个features，找出20个features
+# 应用sk-learn中的SelectKBest
 X_scored = SelectKBest(score_func=f_regression, k=20)
 X_scored.fit(X_train, y_train)
 feat_list=X_scored.get_support()
@@ -56,7 +58,7 @@ feat_pvalue_significant['feature'].values
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 #2.2.1 find the best k features using stepforward method
 stepforward = SFS(LinearRegression(), 
-           k_features=10, 
+           k_features=10, # 加到10个features使r-square更好
            forward=True, 
            floating=False, 
            verbose=2,
@@ -83,7 +85,7 @@ print(X_train.columns[list(backward.k_feature_idx_)])
 
 #3 feature selection with regularization
 #3.1 Ridge Regularization
-ridge_model=Ridge(alpha=1)
+ridge_model=Ridge(alpha=1)# specify这里的惩罚是多少，下一节课会去讲如何做lambda的选择
 ridge_model.fit(X_train, y_train)
 y_trainPred=ridge_model.predict(X_train)
 #in sample
