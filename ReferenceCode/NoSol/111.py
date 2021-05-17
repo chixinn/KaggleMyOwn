@@ -1,0 +1,16 @@
+#coding=utf-8
+try:
+    f=open('te.txt','w+')
+    print("******************")
+    f.write("wx\n")
+    f.write("18121298\n")
+    f.close()
+    f=open('te.txt','r')
+    a=f.read()
+    print(a)
+    f.close()
+    f=open('te.txt','a+')
+    f.write(a)
+    f.close()
+finally:
+    print(a)
